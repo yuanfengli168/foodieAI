@@ -28,12 +28,21 @@ xcodebuild -project FoodieAI.xcodeproj -scheme FoodieAI \
 - 11 unit tests pass (bundle load, 126 dishes, unique IDs, valid flavor/category/source, menu_verified count, emoji fallback, LLM priority order, card source tags)
 - **Testing policy**: ≥95% coverage, manual verification per function, stale doc updates per [doc/testing-guidelines.md](../../doc/testing-guidelines.md)
 
-## Day 1 coverage status
+## What works on Day 2
 
-- Models (Dish, FlavorProfile, CardSource, LLMBackend): **100%** (trivial)
-- `DishRepository`: **~80%** (loader is well-tested; constructor + index lookups need more tests in Day 1.5)
-- `ContentView` smoke view: **0%** (placeholder until Day 6)
-- **Overall**: **~70%** — low because of untested `ContentView`. Will climb above 95% as Days 2-7 add real logic + tests.
+- `PinyinConverter` (hand-rolled lookup for 126 dishes, no full pinyin library)
+- `FuzzyIndex` with 4 channels: EN substring, EN Levenshtein, pinyin Levenshtein, ZH substring
+- Scoring: exact > substring > edit-distance, with menu_verified bonus and exact-match tiebreak
+- 40 new tests (87 total): 28 fuzzy + 9 pinyin + 3 normalize/levenshtein behavior
+
+## Day 1.6 / Day 2 coverage status
+
+- Models: **100%**
+- `DishRepository`: **98.44%**
+- `PinyinConverter`: **100%**
+- `FuzzyIndex`: **96.18%**
+- `FoodieAIApp` smoke view: **97.85%** (needs UI test for full)
+- **Overall line coverage: 97.88%** (above 95% target)
 
 ## What does NOT work on Day 1 (deferred to later days)
 
@@ -51,7 +60,8 @@ See [../../doc/mvp0-plan.md](../../doc/mvp0-plan.md) §9 for the 10-day build or
 | Day | Status | What ships |
 |---|---|---|
 | 1 | ✅ Done | Data layer + 11 tests passing |
-| 2 | ⏳ | Fuzzy index + 20 test queries pass |
+| 1.6 | ✅ Done | Coverage boost to 98.77% (35 new tests) |
+| 2 | ✅ Done | FuzzyIndex + PinyinConverter, 40 new tests, coverage 97.88% |
 | 3 | ⏳ | LLM glue (Apple FM + Qwen 4B + 3B) |
 | 4 | ⏳ | Camera + photo library + auto-start |
 | 5 | ⏳ | OCR pipeline (Apple Vision) |

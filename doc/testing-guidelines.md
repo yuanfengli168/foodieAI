@@ -210,7 +210,7 @@ func testInvalidTransitionThrows() {
 
 ---
 
-## 7. Where we are today (2026-07-26, Day 1.6)
+## 7. Where we are today (2026-07-26, Day 2)
 
 | Component | Tests | Line coverage | Status |
 |---|---|---|---|
@@ -219,8 +219,16 @@ func testInvalidTransitionThrows() {
 | `CardSource.swift` (enum) | 6 tests (tag emoji, short label, distinctness, codable) | **100%** | ✅ |
 | `LLMBackend.swift` (enum) | 7 tests (display label, subtitle, priority, distinctness, codable) | **100%** | ✅ |
 | `DishRepository.swift` (loader) | 15 tests (bundle load, 126 dishes, unique IDs, matching, errors, bad data) | **98.44%** | ✅ |
+| `PinyinConverter.swift` (Day 2) | 9 tests (count, id/name lookup, lowercase no tones, all dishes have pinyin, empty dishes, empty pinyin skipped) | **100%** | ✅ |
+| `FuzzyIndex.swift` (Day 2) | 31 tests (exact EN/ZH, substring, pinyin, typo, edge cases, sorting, levenshtein, normalize) | **96.18%** | ✅ |
 | `FoodieAIApp.swift` (smoke view) | 0 tests (loading state hard to test in XCTest) | 97.85% | ⚠️ full coverage needs UI test (Day 6) |
-| **Overall** | **46/46 passing** | **98.77%** | ✅ above 95% threshold |
+| **Overall** | **87/87 passing** | **97.88%** | ✅ above 95% threshold |
+
+**Day 2 progress**:
+- Added `PinyinConverter.swift` (100% coverage) — hand-rolled pinyin table for the 126 dishes
+- Added `FuzzyIndex.swift` (96.18% coverage) — 4-channel search with scoring + tiebreaks
+- Added 40 new tests across 3 new test classes (FuzzyIndexTests, PinyinConverterTests)
+- Coverage held above 95% (97.88% overall)
 
 **How to reproduce these numbers**:
 ```bash

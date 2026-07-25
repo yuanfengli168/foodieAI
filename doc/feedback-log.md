@@ -578,3 +578,58 @@ Jacky chose:
 - ContentView smoke view: 0% (placeholder until Day 6)
 - Overall: ~70% — will climb above 95% as Days 2-7 add real logic
 
+
+---
+
+## Round 7 — 2026-07-26 (Day 2: Fuzzy Search)
+
+### Context
+
+Day 1 done (commit b5f23eb). Jacky did the smoke test, confirmed the
+"Loaded 126 dishes" message appeared, said "A) for day 2" to start
+fuzzy search.
+
+### Locked decisions (Round 7)
+
+#### D-049 — FuzzyIndex shipped (Day 2)
+- 4 channels: EN substring, EN Levenshtein, pinyin Levenshtein, ZH substring
+- Scoring: exact > substring > edit, with menu_verified bonus
+- Tiebreak: exact (0.01) > substring (0.005) > edit (0.0)
+- Min query length 2 chars, top N 10, min confident score 0.5
+- file: ios/FoodieAI/Data/FuzzyIndex.swift (168 lines)
+
+#### D-050 — PinyinConverter shipped (Day 2)
+- Hand-rolled lookup table for the 126 bundled dishes
+- MVP0: no full pinyin library (would be ~5MB)
+- MVP1: can swap in Pinyin-Swift (MIT) for arbitrary input
+- file: ios/FoodieAI/Data/PinyinConverter.swift
+
+#### D-051 — Fuzzy test queries reworked (Day 2)
+- Original 20 queries in doc/fuzzy-search-tests.md were for the
+  planned MVP1 200-dish DB (Mapo Tofu, Hainanese Chicken Rice, etc.)
+  and didn't exist in the MVP0 126-dish DB
+- Reworked: 32 queries across 8 groups (Exact EN, Exact ZH, Pinyin,
+  Typo, Edge cases, Scoring behavior, Levenshtein, Normalize)
+- file: doc/fuzzy-search-tests.md (rewritten)
+
+#### D-052 — Day 2 coverage achieved
+- 87/87 tests passing (40 new for Day 2)
+- 97.88% line coverage overall
+- 100% function coverage
+- All models 100%, PinyinConverter 100%, FuzzyIndex 96.18%
+- DishRepository 98.44%, FoodieAIApp 97.85%
+- Above 95% threshold per D-045
+
+#### D-053 — String scoring fix (substring edge case)
+- Original: substring match was 0.6 + 0.3 * coverage
+- Issue: when query is exactly the target length (perfect coverage),
+  substring score 0.9 was being beaten by other substring matches
+  at 0.95
+- Fix: perfect coverage (>= 0.999) gets 0.95; partial coverage stays
+  0.6 + 0.3 * coverage. Plus 0.005 substring tiebreak.
+
+#### D-054 — Tiebreak fix (don't cap scores at 1.0)
+- Original: capped at 1.0 with min(), killed the exact-match tiebreak
+- Fix: allow scores > 1.0 internally so the 0.01/0.005 tiebreaks
+  survive. Callers use minConfidentScore (0.5) for the "no match" check.
+
