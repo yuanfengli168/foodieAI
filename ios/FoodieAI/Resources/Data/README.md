@@ -26,6 +26,14 @@ xcodebuild -project FoodieAI.xcodeproj -scheme FoodieAI \
 - Data models: `Dish`, `FlavorProfile`, `CardSource`, `LLMBackend`
 - `DishRepository` loads, parses, validates the bundled JSON
 - 11 unit tests pass (bundle load, 126 dishes, unique IDs, valid flavor/category/source, menu_verified count, emoji fallback, LLM priority order, card source tags)
+- **Testing policy**: ≥95% coverage, manual verification per function, stale doc updates per [doc/testing-guidelines.md](../../doc/testing-guidelines.md)
+
+## Day 1 coverage status
+
+- Models (Dish, FlavorProfile, CardSource, LLMBackend): **100%** (trivial)
+- `DishRepository`: **~80%** (loader is well-tested; constructor + index lookups need more tests in Day 1.5)
+- `ContentView` smoke view: **0%** (placeholder until Day 6)
+- **Overall**: **~70%** — low because of untested `ContentView`. Will climb above 95% as Days 2-7 add real logic + tests.
 
 ## What does NOT work on Day 1 (deferred to later days)
 

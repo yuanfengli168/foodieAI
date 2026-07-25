@@ -533,3 +533,48 @@ Jacky answered:
 
 All questions resolved. Next step: create the Xcode project at `ios/FoodieAI.xcodeproj`, add MLX-Swift via SPM, bundle `dishes.jsonl`, write the data-layer Swift files, write first unit test, verify build with `xcodebuild build`.
 
+
+---
+
+## Round 6 (continued) — 2026-07-26 (Testing & documentation policy)
+
+### Context
+
+After committing Day 1 of the build (commit `fbe45aa`), Jacky locked 3 engineering rules for the project going forward:
+
+1. **≥95% test coverage** for all code
+2. **Manual verification of every function** — not just "tests pass" but "I read the test and confirmed it tests the behavior I care about"
+3. **Update specific stale docs after verified success** — concrete checklist of which docs to touch
+
+Jacky chose:
+- Coverage tool: Xcode built-in (no extra tools)
+- Untestable code: refactor to be testable (introduce protocols), don't exclude
+- Doc updates: specific named docs (explicit checklist)
+
+### Locked decisions (Round 6 cont.)
+
+#### D-044 — Testing & documentation policy created
+- New file: [doc/testing-guidelines.md](testing-guidelines.md)
+- 12 sections covering: coverage measurement, refactor-not-exclude rule, manual verification checklist, stale doc list, CI plan, examples, day-by-day done definition, post-MVP0 roadmap
+
+#### D-045 — Coverage target is 95% overall, 80% per-file
+- Enforced via Xcode's built-in code coverage (no extra tools)
+- CI gate planned for MVP1; MVP0 uses manual coverage check
+- Per-file threshold allows ContentView and other view code to be lower while overall is ≥95%
+
+#### D-046 — Refactor-not-exclude policy for untestable code
+- Default: introduce protocols + mock implementations
+- Examples: OCRServiceProtocol, LLMServiceProtocol, CameraServiceProtocol, Clock, IDGenerator, FileSystem, HTTPClient
+- Trivially untestable code (only `@main`) may be skipped
+
+#### D-047 — Stale docs checklist (specific names)
+- 12 specific docs named in §4 of testing-guidelines.md
+- 30-second staleness check: `git diff --name-only` + ask "is this reflected in any doc?"
+- Affected docs MUST be in the same commit as the code change
+
+#### D-048 — Day 1 coverage status logged
+- Models: 100% (trivial)
+- DishRepository: ~80%
+- ContentView smoke view: 0% (placeholder until Day 6)
+- Overall: ~70% — will climb above 95% as Days 2-7 add real logic
+
