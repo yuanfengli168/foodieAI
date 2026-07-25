@@ -13,11 +13,14 @@
 		29FEF24ECB682C51107E5E48 /* FlavorProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F54C36C1B88CB311CC75B4 /* FlavorProfile.swift */; };
 		32C1172C98F789DEC32BFF44 /* DishRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B3637975B940B8837987E5 /* DishRepositoryTests.swift */; };
 		34A0D2070FD734103C92AB01 /* ErrorsPlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB42D337C7ED256FB38D046D /* ErrorsPlaceholder.swift */; };
+		68B5AB29E60FD30F7C27DC3C /* ModelCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 173D9E9FCC48265930B7B8B4 /* ModelCoverageTests.swift */; };
 		874AD66B25D47DA8922D888A /* dishes.jsonl in Resources */ = {isa = PBXBuildFile; fileRef = CC940F52353CEB37B6C5FBF3 /* dishes.jsonl */; };
 		97FC5D1426EFF4A4F28F1F30 /* LLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F874276CC017426CFAA5F5FA /* LLMBackend.swift */; };
+		C214D6EF18ACABDC7FD31474 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6308EB6422FB61D109995EA6 /* README.md */; };
 		CBEE86AB9CB60116811EDB35 /* ViewsPlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55921B060F39E33B9A80C3BE /* ViewsPlaceholder.swift */; };
 		D54489A85482F7C7FC6EE330 /* CardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9225732C0D7BEA9DF83F9CEB /* CardSource.swift */; };
 		EF7548AB2CD04EABE7A235E8 /* Dish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CDCB00191D468F995CCA622 /* Dish.swift */; };
+		F48CC6954E5F44C6377750C5 /* DishRepositoryEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0F3D0AB2673F4CAE076B47 /* DishRepositoryEdgeCaseTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,10 +35,13 @@
 
 /* Begin PBXFileReference section */
 		15F54C36C1B88CB311CC75B4 /* FlavorProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlavorProfile.swift; sourceTree = "<group>"; };
+		173D9E9FCC48265930B7B8B4 /* ModelCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCoverageTests.swift; sourceTree = "<group>"; };
 		2CDCB00191D468F995CCA622 /* Dish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dish.swift; sourceTree = "<group>"; };
 		302B511C82264DAE384CFB74 /* LoggingPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingPlaceholder.swift; sourceTree = "<group>"; };
 		55921B060F39E33B9A80C3BE /* ViewsPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsPlaceholder.swift; sourceTree = "<group>"; };
 		59796EC51CC124970346BD73 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		6308EB6422FB61D109995EA6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		6F0F3D0AB2673F4CAE076B47 /* DishRepositoryEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishRepositoryEdgeCaseTests.swift; sourceTree = "<group>"; };
 		74E0481E958B2941DB360CE4 /* DishRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishRepository.swift; sourceTree = "<group>"; };
 		9225732C0D7BEA9DF83F9CEB /* CardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardSource.swift; sourceTree = "<group>"; };
 		AB42D337C7ED256FB38D046D /* ErrorsPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorsPlaceholder.swift; sourceTree = "<group>"; };
@@ -143,6 +149,7 @@
 			isa = PBXGroup;
 			children = (
 				CC940F52353CEB37B6C5FBF3 /* dishes.jsonl */,
+				6308EB6422FB61D109995EA6 /* README.md */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -168,7 +175,9 @@
 		D09EEA2580C63A84DAEBD9AA /* FoodieAITests */ = {
 			isa = PBXGroup;
 			children = (
+				6F0F3D0AB2673F4CAE076B47 /* DishRepositoryEdgeCaseTests.swift */,
 				D5B3637975B940B8837987E5 /* DishRepositoryTests.swift */,
+				173D9E9FCC48265930B7B8B4 /* ModelCoverageTests.swift */,
 			);
 			path = FoodieAITests;
 			sourceTree = "<group>";
@@ -271,6 +280,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C214D6EF18ACABDC7FD31474 /* README.md in Resources */,
 				874AD66B25D47DA8922D888A /* dishes.jsonl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -298,7 +308,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F48CC6954E5F44C6377750C5 /* DishRepositoryEdgeCaseTests.swift in Sources */,
 				32C1172C98F789DEC32BFF44 /* DishRepositoryTests.swift in Sources */,
+				68B5AB29E60FD30F7C27DC3C /* ModelCoverageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
