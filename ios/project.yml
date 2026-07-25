@@ -1,0 +1,79 @@
+name: FoodieAI
+options:
+  bundleIdPrefix: com.foodieai
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  groupSortPosition: top
+  generateEmptyDirectories: true
+  createIntermediateGroups: true
+  defaultConfig: Debug
+  path: /Users/jackyli/Desktop/Githubs/foodieAI/ios
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    SWIFT_STRICT_CONCURRENCY: complete
+    GENERATE_INFOPLIST_FILE: YES
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+configs:
+  Debug: debug
+  Release: release
+targets:
+  FoodieAI:
+    type: application
+    platform: iOS
+    sources:
+      - path: FoodieAI
+    resources:
+      - path: FoodieAI/Resources/Data/dishes.jsonl
+    info:
+      path: FoodieAI/Info.plist
+      properties:
+        UILaunchScreen:
+          UIColorName: ""
+          UIImageName: ""
+        CFBundleDisplayName: foodieAI
+        NSCameraUsageDescription: "foodieAI needs the camera to read menus in foreign languages."
+        NSPhotoLibraryUsageDescription: "foodieAI needs photo library access to read menu photos you've already taken."
+        NSPhotoLibraryAddUsageDescription: "foodieAI can save dish photos to your library."
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiredDeviceCapabilities:
+          - arm64
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.foodieai.app
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+  FoodieAITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FoodieAITests
+    dependencies:
+      - target: FoodieAI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.foodieai.app.tests
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FoodieAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FoodieAI"
+schemes:
+  FoodieAI:
+    build:
+      targets:
+        FoodieAI: all
+        FoodieAITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - FoodieAITests
+    archive:
+      config: Release
