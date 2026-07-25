@@ -1,7 +1,7 @@
 # On-Device LLM Comparison for FoodieAI MVP1
 
-> Status: Locked (Qwen 2.5 **4B** Instruct for MVP1) — updated 2026-07-21
-> Previous: Qwen 2.5 3B (locked 2026-07-17, superseded)
+> Status: Locked (Apple Foundation Models **primary** + Qwen 2.5 4B fallback) — updated 2026-07-26 (Round 6)
+> Previous: Qwen 2.5 4B as primary (locked 2026-07-21 R2, superseded)
 
 ## Candidates
 
@@ -15,7 +15,85 @@
 | Qwen 2.5 1.5B | 1.5B | 1.0GB | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ~70 t/s | Apache 2.0 |
 | Llama 3.2 1B | 1B | 0.7GB | ⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ~80 t/s | Llama |
 
-## MVP1 Choice: Qwen 2.5 4B Instruct (updated 2026-07-21)
+## MVP1 Choice: Apple Foundation Models (primary) + Qwen 2.5 4B (fallback) — updated 2026-07-26 (Round 6)
+
+**The 2026 iOS 26 architecture for foodieAI**:
+
+| Priority | Model | Source | When |
+|---|---|---|---|
+| **1 (PRIMARY)** | **Apple Foundation Models** (~3B, on-device) | iOS 26 system, no app size | Default for all card generation. Free, fast, zero download, zero thermals. |
+| **2 (FALLBACK)** | **Qwen 2.5 4B Instruct** (4-bit) | mlx-community, bundled ~2.4GB | When Apple FM is unavailable, gives bad output, or user picks Qwen in Settings. |
+| **3 (THERMAL)** | **Qwen 2.5 3B Instruct** (4-bit) | mlx-community, bundled ~1.8GB | When Qwen 4B is OOMing or device is thermal-throttled. |
+
+### Why Apple Foundation Models as PRIMARY (revised 2026-07-26)
+
+**The change**: iOS 26 ships with a free, on-device ~3B Foundation Model that any app can call via `LanguageModelSession`. This changes the MVP0/MVP1 cost calculus completely.
+
+| | Apple FM (iOS 26) | Qwen 4B (MLX-Swift) |
+|---|---|---|
+| **App size cost** | 0 | +2.4GB |
+| **First-launch time** | Instant | 5-15s for 4B to load |
+| **Download required** | No | Yes (one-time) |
+| **Speed** | ~fast (ANE/NPU) | ~30 t/s (GPU) |
+| **Thermal** | Cool (NPU) | Hot (GPU) |
+| **JSON control** | Medium (lenient parsing needed) | High (4B is excellent at JSON) |
+| **Customization** | None | Full (can fine-tune, change prompts) |
+| **Schema enforcement** | Weaker | Stronger |
+| **ZH quality** | Good | Excellent |
+| **License risk** | None (Apple system) | None (Apache 2.0) |
+| **App Store review** | Easier | Slightly harder (third-party ML) |
+| **Works offline** | ✅ | ✅ |
+| **Privacy** | ✅ Same | ✅ Same |
+
+**Why Apple FM wins as primary**:
+- Zero app size, zero first-launch cost, zero thermal impact
+- Good enough quality for "describe this dish in JSON" (the 80% case)
+- Apple ships it pre-installed on every iOS 26 device
+- We can still fall back to Qwen 4B for the 20% of cases where we need richer Chinese or stricter JSON
+- Best of both worlds: cheap by default, premium when needed
+
+**Why Qwen 4B stays as fallback**:
+- Apple FM has weaker schema enforcement — for our JSON card schema, Qwen 4B is more reliable
+- For vivid Chinese intros on obscure dishes, Qwen 4B's ZH training is deeper
+- For users who turn off Apple Intelligence in iOS Settings, we still need a path
+- For our own A/B testing during MVP0/MVP1, we need to compare both
+
+### Why NOT CoreML for the LLM (clarified 2026-07-26)
+
+You asked if CoreML on iPhone is better than MLX-Swift for LLMs in 2026. The honest answer:
+
+**CoreML is best for**: vision, speech, small bespoke models, post-OCR spell-correction, image classification. Runs on the ANE (Apple Neural Engine), 10x more power-efficient than GPU.
+
+**CoreML is NOT best for**: general-purpose LLMs (3-8B parameter). Reasons:
+- Apple's CoreML converter struggles with LLM architectures outside its curated set
+- Qwen 2.5 converted to CoreML loses ~15-20% quality (quantization-on-quantization)
+- You give up MLX-Swift's mature LLM tooling (KV cache, chat templates, streaming, sampling)
+- The CoreML LLM ecosystem is mostly Stable Diffusion / Whisper / small CNNs, not 3-8B LLMs
+
+**The exception**: post-MVP0, when we add a small (~50MB) Chinese spell-correction model for OCR errors. THAT belongs on CoreML + ANE, not MLX.
+
+### Why we DON'T use Apple Intelligence vs Apple Foundation Models
+
+Both are iOS 26 system features, but they're different:
+- **Apple Intelligence** = the brand/marketing for Apple's AI features (Writing Tools, Image Playground, Genmoji, Siri)
+- **Apple Foundation Models** = the actual on-device LLM API (`LanguageModelSession`) that powers Apple Intelligence
+
+foodieAI uses **Apple Foundation Models** directly via `LanguageModelSession`, not the higher-level Apple Intelligence features.
+
+### User-visible backend picker (Settings)
+
+```
+LLM backend (priority order)
+○ Apple Foundation Models   ← default, free, fast
+○ Qwen 2.5 4B              ← bundled, best quality
+○ Qwen 2.5 3B              ← bundled, lower thermal
+```
+
+Settings switch is **runtime** — no app restart.
+
+## MVP1 Choice: Qwen 2.5 4B Instruct (updated 2026-07-21) — SUPERSEDED by Round 6 above
+
+> The text below is preserved as historical record from when Qwen 4B was the primary. See "Apple Foundation Models (primary) + Qwen 4B (fallback)" above for the current architecture.
 
 **Why 4B over 3B** (re-evaluation):
 - **~10-15% slower but meaningfully better JSON output** — less schema-enforcement prompting needed, fewer retries on malformed `flavor` profile

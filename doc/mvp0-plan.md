@@ -17,9 +17,9 @@
 | **Menu A** | Noodle Gourmet NJ — Chinese-American, EN-only, 86 dishes |
 | **Menu B** | Zhang Gui 掌櫃 SG — Northern Chinese, ZH+EN, 40 visible dishes |
 | **DB** | Bundled JSON, read-only, 126 cards in `dishes.jsonl` |
-| **LLM** | Qwen 2.5 4B (primary) + Qwen 2.5 3B (thermal fallback) + Apple Intelligence (best-effort on iOS 26+). Runtime picker in Settings. |
-| **LLM priority** | **4B → 3B → Apple Intelligence** (Q5 R5: 4B for quality, 3B for thermals, AI when available) |
-| **OCR** | Apple `Vision` framework, `.accurate`, `.revision2` (iOS 18) |
+| **LLM** | **Apple Foundation Models (iOS 26 system, primary)** + Qwen 2.5 4B (bundled fallback) + Qwen 2.5 3B (thermal fallback). Runtime picker in Settings. |
+| **LLM priority** | **Apple Foundation Models → Qwen 4B → Qwen 3B** (R6 Q2: Apple FM for free + zero app size, Qwen for richer ZH / stricter JSON, 3B for thermals) |
+| **OCR** | Apple `Vision` framework, `.accurate`, `.revision3` (iOS 26) |
 | **OCR UX** | **Auto-start on capture → dish list (no review screen in MVP0)**. D-012 review screen deferred to MVP1. Hidden long-press hook for "Re-edit OCR results" in MVP0. |
 | **Search** | Fuzzy (EN / ZH / pinyin transliteration), no exact-match mode |
 | **Card source tags** | 📖 Wikipedia/百度百科, 📷 Menu-verified, 🤖 LLM-only. **🤖 cards are HIDDEN from the list entirely** when the Settings toggle is off (R5 Q3). |
@@ -81,7 +81,7 @@ foodieAI/
 │   │   │   ├── Dish.swift                  (Codable mirror of dishes.jsonl schema)
 │   │   │   ├── FlavorProfile.swift
 │   │   │   ├── CardSource.swift            (enum: wikipedia, baidu_baike, menuVerified, llmOnly)
-│   │   │   └── LLMBackend.swift            (enum: qwen4b, qwen3b, appleIntelligence)
+│   │   │   └── LLMBackend.swift            (enum: appleFoundation, qwen4b, qwen3b) |
 │   │   ├── Data/
 │   │   │   ├── DishRepository.swift        (loads + indexes bundled JSON)
 │   │   │   ├── FuzzyIndex.swift            (Levenshtein on pinyin, EN substring, ZH substring)
@@ -241,7 +241,7 @@ User taps 📷 (camera) or + (library)
     ↓
 4. VNRecognizeTextRequest with:
     - recognitionLevel: .accurate
-    - revision: VNRecognizeTextRequestRevision2  (iOS 18)
+    - revision: VNRecognizeTextRequestRevision3  (iOS 26) — better CJK accuracy, R6 update
     - usesLanguageCorrection: true
     - recognitionLanguages: ["en-US", "zh-Hans"]
     ↓
@@ -283,18 +283,26 @@ User taps 📷 (camera) or + (library)
 
 ## 6. LLM glue
 
-### Backend selection (priority order locked Round 5)
-- `LLMBackend.qwen4b` → load `Qwen2.5-4B-Instruct-4bit/` via MLX-Swift. **PRIMARY** — best card quality, OK thermals on A19 Pro.
+### Backend selection (priority order locked Round 6 — 2026-07-26)
+- `LLMBackend.appleFoundation` → iOS 26 system model via `LanguageModelSession`. **PRIMARY** — free, zero app size, instant, runs on ANE.
+- `LLMBackend.qwen4b` → load `Qwen2.5-4B-Instruct-4bit/` via MLX-Swift. **BUNDLED FALLBACK** — best ZH/JSON quality, ~2.4GB app size cost.
 - `LLMBackend.qwen3b` → load `Qwen2.5-3B-Instruct-4bit/` via MLX-Swift. **THERMAL FALLBACK** — auto-switch if 4B is OOMing or device is hot.
-- `LLMBackend.appleIntelligence` → iOS 26 Foundation Models. **BEST-EFFORT** — if available, use for free; else fall through to 4B.
 
 User picks the backend in Settings; the picker is runtime-switchable without restart (R5 Q5).
 
+### Why Apple Foundation Models is now primary (R6 rationale)
+See [`model-comparison.md`](model-comparison.md) §MVP1 Choice for full reasoning. TL;DR: iOS 26 ships a free on-device ~3B model that any app can call. Zero app size, zero first-launch cost, better thermals, easier App Store review. Qwen 4B is bundled as fallback for cases where Apple FM gives weaker JSON or less vivid Chinese.
+
 ### Backend auto-fallback (if selected backend fails)
 1. Try the user-selected backend
-2. If it throws (model not loaded, OOM, schema fail) → fall through to 3B
-3. If 3B also fails → fall through to Apple Intelligence (if iOS 26+)
+2. If it throws (model not loaded, OOM, schema fail) → fall through the priority list
+3. Apple FM → Qwen 4B → Qwen 3B (in that order)
 4. If all fail → show `Couldn't generate card. Tap to retry.`
+
+### Per-backend behavior notes
+- **Apple Foundation Models**: best-effort, may say "I don't know" for obscure dishes. Lenient JSON parsing (strip markdown fences, look for first `{...}` block).
+- **Qwen 4B**: strict JSON mode works, schema enforcement via prompt. ~2.5s first-token, ~30 t/s after.
+- **Qwen 3B**: same as 4B but ~1.8s first-token, ~40 t/s. Lower thermals.
 
 ### Card generation prompt (system)
 
@@ -431,13 +439,13 @@ func generateCard(for dish: Dish) async throws -> Card {
 │  ← Settings                             │
 ├────────────────────────────────────────┤
 │  LLM backend                            │
-│  ○ Qwen 2.5 4B (recommended)            │
-│  ○ Qwen 2.5 3B                          │
-│  ○ Apple Intelligence (iOS 26)         │
+│  ○ Apple Foundation Models (default)   │
+│  ○ Qwen 2.5 4B (bundled)               │
+│  ○ Qwen 2.5 3B (lower thermals)        │
 │                                        │
 │  About                                  │
 │  foodieAI MVP0 · v0.1.0                │
-│  100 dishes · 2 menus                  │
+│  126 dishes · 2 menus                  │
 └────────────────────────────────────────┘
 ```
 

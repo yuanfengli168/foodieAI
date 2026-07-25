@@ -461,3 +461,75 @@ All product + UX questions locked. Ready to start the build.
 **Status: plan complete. Build not started.**
 
 Next deliverable (when Jacky says "go"): the Xcode project skeleton (Day 1 of [mvp0-plan.md](mvp0-plan.md) §9 build order).
+
+---
+
+## Round 6 — 2026-07-26 (iOS 26 + Apple Foundation Models architecture flip)
+
+### Context
+
+Pre-build check surfaced two real changes since the plan was written:
+1. **Xcode 26.1.1 + Swift 6.2.1** is installed (not Xcode 16 as the plan assumed)
+2. Jacky asked the right question: is CoreML better than MLX-Swift for LLMs in 2026?
+
+The answer: **CoreML is best for vision/speech/small bespoke models (post-OCR spell-checker, image classifiers)**, not for general LLMs. Apple's CoreML converter struggles with Qwen-class LLMs and loses 15-20% quality on conversion. MLX-Swift remains the right tool for Qwen.
+
+**But the bigger 2026 news**: iOS 26 ships **Apple Foundation Models** — a free, on-device ~3B LLM that any app can call via `LanguageModelSession`. Zero app size, instant first-launch, runs on ANE. This is a real game-changer for our app size budget.
+
+Jacky answered:
+- **Q1**: iOS 26 as deployment target (locks out iOS 18+ users, but his test device is iPhone 17 Pro Max which is iOS 26 guaranteed, and shipping is priority)
+- **Q2**: asked about CoreML vs MLX — see analysis above
+- **Q3**: `ios/` folder inside the repo (matches `mvp0-plan.md` §2)
+- **Q4**: bundle Qwen 4B + 3B as fallback in MVP0 (not download-on-demand)
+
+### Locked decisions (Round 6)
+
+#### D-037 — iOS 26 is the deployment target (was iOS 18 in R1)
+- Xcode 26.1.1 installed
+- Unlocks: Apple Foundation Models, Vision `.revision3`, Swift 6.2 strict concurrency
+- Trade-off: iOS 18+ users (iPhone XS to 14) cannot run the app. Acceptable because Jacky's test device is iPhone 17 Pro Max, and shipping is priority.
+
+#### D-038 — CoreML is NOT the LLM strategy (clarified 2026-07-26)
+- CoreML is best for: vision, speech, small bespoke models, post-OCR spell-correction
+- CoreML is NOT best for: general LLMs (3-8B)
+- The exception: post-MVP0 Chinese spell-correction model (~50MB) will use CoreML + ANE
+- MLX-Swift remains the right tool for Qwen-class LLMs
+
+#### D-039 — LLM architecture flipped: Apple Foundation Models PRIMARY, Qwen FALLBACK (was D-031, superseded)
+- **Priority order**: Apple Foundation Models → Qwen 4B → Qwen 3B
+- **Why Apple FM as primary**:
+  - 0 GB app size (system model, no download)
+  - Instant first-launch (no 5-15s model load)
+  - Runs on ANE (better thermal profile than GPU-bound Qwen)
+  - Free (no per-call API cost)
+  - Easier App Store review (no third-party ML framework)
+- **Why Qwen 4B stays bundled as fallback**:
+  - Apple FM has weaker schema enforcement — for our JSON card schema, Qwen 4B is more reliable
+  - For vivid Chinese intros on obscure dishes, Qwen 4B's ZH training is deeper
+  - For users who turn off Apple Intelligence in iOS Settings
+  - For A/B testing during MVP0/MVP1
+- **Why Qwen 3B stays as thermal fallback**: same as before, lower RAM/thermals
+
+#### D-040 — Qwen 4B + 3B bundled (not download-on-demand)
+- MVP0 includes both Qwen shards as bundled resources
+- Adds ~2.4GB to .ipa size, but App Store supports on-demand resources
+- Can be moved to download-on-demand in MVP1 if app size matters
+- Locked per R6 Q4 = "a"
+
+#### D-041 — `LLMBackend` enum updated: `appleFoundation | qwen4b | qwen3b` (was `qwen4b | qwen3b | appleIntelligence`)
+- Matches the new priority order
+- All 3 still runtime-switchable in Settings
+
+#### D-042 — Vision `.revision3` (was `.revision2`)
+- iOS 26 ships the updated Vision text recognition
+- ~10-15% better CJK accuracy than `.revision2`
+- We get it for free with the iOS 26 deployment target upgrade
+
+#### D-043 — App Store IAP / TestFlight readiness
+- Apple Developer account confirmed (R5 Q6)
+- Can deploy to TestFlight once Day 8 device test passes
+
+### Status: ready to start Day 1 of the build
+
+All questions resolved. Next step: create the Xcode project at `ios/FoodieAI.xcodeproj`, add MLX-Swift via SPM, bundle `dishes.jsonl`, write the data-layer Swift files, write first unit test, verify build with `xcodebuild build`.
+
