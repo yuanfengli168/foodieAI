@@ -210,19 +210,31 @@ func testInvalidTransitionThrows() {
 
 ---
 
-## 7. Where we are today (2026-07-26, Day 1)
+## 7. Where we are today (2026-07-26, Day 1.6)
 
-| Component | Tests | Coverage | Status |
+| Component | Tests | Line coverage | Status |
 |---|---|---|---|
-| `Dish.swift` (Codable model) | 4 tests (valid flavor/category/source, known dish) | 100% (trivial model) | ✅ |
-| `FlavorProfile.swift` (model + validate) | 1 test (valid flavor) | 100% (trivial) | ✅ |
-| `CardSource.swift` (enum) | 1 test (tag emojis) | 100% (trivial) | ✅ |
-| `LLMBackend.swift` (enum) | 1 test (priority order) | 100% (trivial) | ✅ |
-| `DishRepository.swift` (loader) | 4 tests (bundle load, 126 dishes, unique IDs, menu_verified count) | ~80% (constructor + lookups not deeply tested) | ⚠️ improve in Day 1.5 |
-| `ContentView.swift` (smoke view) | 0 tests | 0% | ⚠️ deferred to Day 6 (proper UI) |
-| **Overall** | **11/11 passing** | **~70%** (low because of untested ContentView) | ⚠️ will jump to 95% as we add logic and tests |
+| `Dish.swift` (Codable model) | 11 tests (valid flavor/category/source, known dish, displayName/Subtitle, hasPhoto, isAIGenerated) | **100%** | ✅ |
+| `FlavorProfile.swift` (model + validate) | 7 tests (zero, max, out-of-range, all fields, codable, hashable) | **100%** | ✅ |
+| `CardSource.swift` (enum) | 6 tests (tag emoji, short label, distinctness, codable) | **100%** | ✅ |
+| `LLMBackend.swift` (enum) | 7 tests (display label, subtitle, priority, distinctness, codable) | **100%** | ✅ |
+| `DishRepository.swift` (loader) | 15 tests (bundle load, 126 dishes, unique IDs, matching, errors, bad data) | **98.44%** | ✅ |
+| `FoodieAIApp.swift` (smoke view) | 0 tests (loading state hard to test in XCTest) | 97.85% | ⚠️ full coverage needs UI test (Day 6) |
+| **Overall** | **46/46 passing** | **98.77%** | ✅ above 95% threshold |
 
-**Note**: The overall 70% is misleading — most of the un-covered code is in `ContentView.swift` which is a placeholder until Day 6. As soon as we add real logic (Days 2-7), coverage will climb above 95% quickly.
+**How to reproduce these numbers**:
+```bash
+cd ios
+xcodegen generate
+xcodebuild -project FoodieAI.xcodeproj -scheme FoodieAI \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -configuration Debug -enableCodeCoverage YES \
+  -resultBundlePath /tmp/foodieai-test.xcresult test
+
+PROFDATA=$(find ~/Library/Developer/Xcode/DerivedData -name "Coverage.profdata" 2>/dev/null | head -1)
+DYLIB=$(find ~/Library/Developer/Xcode/DerivedData -name "FoodieAI.debug.dylib" 2>/dev/null | head -1)
+xcrun llvm-cov report "$DYLIB" -instr-profile "$PROFDATA"
+```
 
 ---
 
