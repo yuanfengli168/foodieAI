@@ -223,12 +223,42 @@ func testInvalidTransitionThrows() {
 | `FuzzyIndex.swift` (Day 2) | 31 tests (exact EN/ZH, substring, pinyin, typo, edge cases, sorting, levenshtein, normalize) | **96.18%** | ✅ |
 | `FoodieAIApp.swift` (smoke view) | 0 tests (loading state hard to test in XCTest) | 97.85% | ⚠️ full coverage needs UI test (Day 6) |
 | **Overall** | **87/87 passing** | **97.88%** | ✅ above 95% threshold |
+| `Views/SearchViewHelpers.swift` (Day 2.5) | 13 tests: 4 `ScoreColorTests`, 9 `SearchDishesTests` | **100%** | ✅ |
+| `App/FoodieAIApp.swift` (Day 2.5, after D-055/#if DEBUG + D-056 helper extraction) | 0 unit tests; manual smoke test in simulator | **44.01%** | ⚠️ gap acknowledged — see **Day 2.5** below |
+| **Overall (Day 2.5)** | **100/100 passing** | **67.58%** | ⚠️ below 95% — see **Day 2.5** below |
 
 **Day 2 progress**:
 - Added `PinyinConverter.swift` (100% coverage) — hand-rolled pinyin table for the 126 dishes
 - Added `FuzzyIndex.swift` (96.18% coverage) — 4-channel search with scoring + tiebreaks
 - Added 40 new tests across 3 new test classes (FuzzyIndexTests, PinyinConverterTests)
 - Coverage held above 95% (97.88% overall)
+
+**Day 2.5 — coverage gap acknowledged (R8 D-057)**:
+
+After wrapping `SmokeTestView` under `#if DEBUG` and adding `ProductionPlaceholder`
+(R8 D-055), plus extracting the logic to `Views/SearchViewHelpers.swift` (R8 D-056),
+overall coverage dropped from 97.88% to 67.58%. The reason: the SwiftUI view bodies
+in `FoodieAIApp.swift` (SmokeTestView's `body`, ProductionPlaceholder's `body`,
+SearchField's make/update/dismiss) aren't reachable from XCTest because SwiftUI
+treats `body` as non-callable in unit tests (`body() should not be called on
+ModifiedContent<...>` if you try).
+
+**Plan to close the gap (Day 6)**:
+1. Introduce `SearchViewModel: ObservableObject` and move the user-facing state
+   out of the view's `@State` (`query`, `results`, `repository`)
+2. Add a `ViewModel.search(_:)` method that wraps `searchDishes(_:in:)` plus
+   future OCR/LLM calls
+3. Test the ViewModel directly via XCTest — no SwiftUI needed
+4. Drop coverage on `FoodieAIApp.swift` to just the `@main` Scene entry; expect
+   ≥95% overall once ViewModel lands
+
+**Why we accepted the gap now** (rather than refactoring before Day 6):
+- The smoke-test view is replaced wholesale on Day 6 with the real `ContentView`
+- Day 6 will ship the right pattern (ViewModel) once we know what state the
+  production view actually needs
+- §2 says "refactor, don't exclude": extracting `searchDishes` and `scoreColor`
+  to a 100%-covered `SearchViewHelpers.swift` is the refactor we *can* do today;
+  the ViewModel extraction requires the production UI skeleton, which is Day 6.
 
 **How to reproduce these numbers**:
 ```bash

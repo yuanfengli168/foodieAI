@@ -633,3 +633,49 @@ fuzzy search.
 - Fix: allow scores > 1.0 internally so the 0.01/0.005 tiebreaks
   survive. Callers use minConfidentScore (0.5) for the "no match" check.
 
+
+---
+
+## Round 8 — Day 2.5 (smoke test view, helper extraction, coverage gap acknowledged)
+
+Date: 2026-07-26
+Total tests: **100** (87 from Day 2 + 13 new in Day 2.5)
+Overall coverage: **67.58%** (down from Day 2's 97.88%)
+
+### D-055 — Keep SmokeTestView under #if DEBUG, add ProductionPlaceholder for non-DEBUG
+- Original Day 2 SmokeTestView lived in FoodieAIApp.swift unconditionally
+- Wrapped in `#if DEBUG` so release builds get a clean placeholder
+- @main struct just selects the view (still doesn't have a `.task` modifier
+  on the WindowGroup — that failed to compile because WindowGroup has no
+  `.task`, see test_note below)
+- ProductionPlaceholder shows "foodieAI / MVP0 in progress / Loaded N dishes"
+  for non-DEBUG builds
+- file: ios/FoodieAI/App/FoodieAIApp.swift
+
+### D-056 — Extract free functions for unit-testability
+- `searchDishes(query:in:)` — wraps the dish index call from the smoke view
+  so it can be tested without SwiftUI
+- `scoreColor(_:)` — maps a FuzzyMatch score to sage/terracotta/amber/.secondary
+- `runSearch(_:)` and the private `scoreColor` method were removed from
+  SmokeTestView; the view body now calls these free functions
+- file: ios/FoodieAI/Views/SearchViewHelpers.swift (new)
+
+### D-057 — Document the FoodieAIApp.swift coverage gap
+- After D-055 and D-056, the data-layer files all hit ≥98% and helpers hit 100%
+- FoodieAIApp.swift sits at 44% line coverage because SwiftUI view bodies
+  can't be unit-tested (a previous attempt crashed with `body() should not
+  be called on ModifiedContent<...>`)
+- Per doc/testing-guidelines.md §2, the right fix is a SearchViewModel on
+  Day 6 — moving the remaining `body` logic into the model. For now, the
+  SmokeTestView is verified manually in the simulator (you typed
+  `sesame chicken` and got `芝麻鸡 (Sesame Chicken)` at score 1.21 sage-green).
+- file: doc/testing-guidelines.md §1 (acknowledged in §1 pass criterion: `ContentView.swift until UI lands` pattern applies here too)
+
+### test_note — WindowGroup has no `.task` modifier
+- Tried to put `.task { try DishRepository.loadFromBundle() }` on the
+  WindowGroup (an iOS 26 Scene). Compile error:
+  `value of type 'WindowGroup<SmokeTestView>' has no member 'task'`
+- Resolution: `.task` belongs on a View, not a Scene. Moved it inside the
+  view body. Actually simpler: each view's `.task` (or the views inside
+  the ViewBuilder closure) handles it. The final implementation in
+  FoodieAIApp.swift has each view's `.task` independently load the repository.
