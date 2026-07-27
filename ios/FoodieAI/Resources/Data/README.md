@@ -1,6 +1,6 @@
 # foodieAI — iOS App
 
-> MVP0 status: **Day 3 complete** (LLM glue, AppleFM backend, 151 tests)
+> MVP0 status: **Day 4 complete** (Camera + Library picker + MenuProcessor stub, 194 tests)
 > Last build: 2026-07-27 (iOS 26 simulator, iPhone 17 Pro Max)
 
 ## Quick start
@@ -106,6 +106,32 @@ require device-only or simulator-unreachable code to close:
 For now, every *code path reachable in the simulator* is covered, and the
 data layer / LLM layer files are all at 100% or close.
 
+## Known coverage gaps — Day 4 update (R10 D-082)
+
+Two new gaps joined the list at Day 4:
+
+3. **`Camera/AVCameraService.swift` (5.05%)** — most lines are
+   `AVCaptureSession`/`AVCapturePhotoOutput` glue that needs a real
+   camera. Closed on-device in Day 8.
+4. **`Camera/LibraryPicker.swift` (15.22%)** — the protocol-level
+   error tests run; the PHPickerViewController delegate path needs a
+   real Photos library. Closed on-device in Day 8.
+
+## What works on Day 4
+
+- `Camera/CameraService.swift` (R10 D-073) — protocol with 7 methods
+- `Camera/CameraError.swift` (R10 D-072) — 6 cases incl. `.unavailable`
+- `Camera/CameraAuthorizationStatus.swift` (R10 D-071) — 5 cases + userMessage
+- `Camera/AVCameraService.swift` (R10 D-078) — AVCaptureSession-backed real impl
+- `Camera/CameraServiceMock.swift` (R10 D-074) — 3-init test double
+- `Camera/CapturedImageStore.swift` (R10 D-075) — single-slot in-memory + tmp dir
+- `Camera/LibraryPicker.swift` (R10 D-076/D-077) — protocol + PHPicker-backed
+- `Camera/MenuProcessor.swift` (R10 D-079/D-080) — Day 5 handoff stub
+- `Views/CameraPanel.swift` (R10 D-081) — SwiftUI panel mounted under SmokeTestView
+- 43 new tests (CameraErrorTests 8, CameraAuthorizationStatusTests 6,
+  CameraServiceMockTests 12, LibraryPickerErrorTests 5, CapturedImageStoreTests 6,
+  MenuProcessorTests 6) — **Total: 194 tests passing.**
+
 ## Day-by-day build progress
 
 See [../../doc/mvp0-plan.md](../../doc/mvp0-plan.md) §9 for the 10-day build order.
@@ -116,7 +142,7 @@ See [../../doc/mvp0-plan.md](../../doc/mvp0-plan.md) §9 for the 10-day build or
 | 1.6 | ✅ Done | Coverage boost to 98.77% (35 new tests) |
 | 2 | ✅ Done | FuzzyIndex + PinyinConverter, 40 new tests, coverage 97.88% |
 | 3 | ✅ Done | LLM glue (Apple FM backend), 51 new tests, 151 total |
-| 4 | ⏳ | Camera + photo library + auto-start |
+| 4 | ✅ Done | Camera + Library picker + MenuProcessor stub, 43 new tests, 194 total |
 | 5 | ⏳ | OCR pipeline (Apple Vision) |
 | 6 | ⏳ | UI: ContentView + DishCard + DishListRow |
 | 7 | ⏳ | Settings + error handling + polish |

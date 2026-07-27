@@ -771,3 +771,128 @@ Overall coverage: **73.76%** (up from Day 2.5's 67.58%; new file coverage 74–1
   "Missing bundle ID". Fixed by adding ios/FoodieAI/Info.plist with the
   expected keys (CFBundleDisplayName, permission strings, supported
   orientations). Tests target also needed GENERATE_INFOPLIST_FILE: YES.
+
+---
+
+## Round 10 — Day 4 (Camera + Library + MenuProcessor stub)
+
+Date: 2026-07-27
+Total tests: **194** (151 from Day 3 + 43 new in Day 4)
+Day-4 file coverage range: 15.22% to 100% (3 files ≥95%, 2 files device-only by design)
+
+### D-071 — CameraAuthorizationStatus (5 cases)
+- notDetermined / authorized / denied / restricted / unavailable
+- Each has userMessage (Human-readable English; Day 7 will localize)
+- File: ios/FoodieAI/Camera/CameraAuthorizationStatus.swift (100%)
+
+### D-072 — CameraError (6 cases)
+- unauthorized / invalidSessionState / underlying / cancelled / emptyImage / unavailable
+- Same pattern as LLMError (R9): errorDescription + tag + Equatable
+- File: ios/FoodieAI/Camera/CameraError.swift (100%)
+
+### D-073 — CameraService protocol
+- 7 methods: displayLabel, authorizationStatus (async), requestAuthorization,
+  configureSession, startSession, stopSession, capturePhoto, ingest
+- ingest() default throws "mock-only" so real impls get a free guard.
+- File: ios/FoodieAI/Camera/CameraService.swift (100% — just the default impl)
+
+### D-074 — CameraServiceMock (3 inits)
+- scripted list, failFirstThenReturn, default-next-image
+- 7 call-count slots: requestAuth / configureSession / startSession / stopSession
+  / capturePhoto / ingest / authorizationStatus (read-only)
+- File: ios/FoodieAI/Camera/CameraServiceMock.swift (98.82%)
+
+### D-075 — CapturedImageStore (single in-memory slot)
+- @MainActor ObservableObject; @Published current/onDiskPath/capturedAt
+- set() writes JPEG to tmp/foodieai/menu-{uuid}.jpg (UUID so two consecutive
+  calls in the same second don't reuse the previous filename and accidentally
+  nuke the just-written file — bug caught by test_set_overwrites_previous_tmp_file).
+- clear() removes both in-memory state and tmp file.
+- File: ios/FoodieAI/Camera/CapturedImageStore.swift (97.22%)
+
+### D-076 — LibraryPicker protocol + 3-case error
+- cancelled / underlying / emptyImage
+- pickImage() async throws -> UIImage? (nil = user cancelled)
+- File: ios/FoodieAI/Camera/LibraryPicker.swift (15.22%)
+
+### D-077 — PHPPickerLibraryPicker (PHPicker-backed real impl)
+- iOS 26 + PhotosUI required (gated with #if canImport)
+- Uses NSLock for the continuation since PHPicker delegate is nonisolated
+- Sendable extraction at the boundary (`asImage: UIImage? = reading as? UIImage`)
+- Day 6 ContentView wraps this in a UIViewControllerRepresentable so SwiftUI
+  can present it; the picker itself stays plain.
+- File: ios/FoodieAI/Camera/LibraryPicker.swift (PHPicker wrapper)
+
+### D-078 — AVCameraService (AVCaptureSession-backed real impl)
+- configureSession: sets .photo preset + back camera + photo output
+- requestAuthorization: maps AVAuthorizationStatus to ours, throws .unauthorized
+  if denied.
+- capturePhoto: AVCapturePhotoCaptureDelegate → UIImage via fileDataRepresentation()
+- All paths gated by #if canImport(AVFoundation) for testability.
+- File: ios/FoodieAI/Camera/AVCameraService.swift (5.05% — device ceiling)
+
+### D-079 — MenuProcessor stub (the handoff for Day 5)
+- StubMenuProcessor.process(image:onDiskPath:) → .received(imageBytes, path, label)
+  or .errored(reason).
+- Day 5 swaps the body for Vision OCR → FuzzyIndex lookup → LLM scheduling.
+- File: ios/FoodieAI/Camera/MenuProcessor.swift (100%)
+
+### D-080 — MenuProcessingResult enum
+- 2 cases: .received, .errored
+- Equatable. Day 5 will grow into .completed/.partial/.needsReview.
+- File: ios/FoodieAI/Camera/MenuProcessor.swift
+
+### D-081 — CameraPanel + SmokeTestView wiring
+- New `Views/CameraPanel.swift` subview shows the [Take photo / From library /
+  Process menu →] buttons inside SmokeTestView.
+- Auto-capture (Q2 = 600ms) is intentionally **off** in the smoke panel so we
+  can verify the wiring step-by-step. Day 6's production ContentView will turn
+  it on per the original R7-D-012 lock.
+- Status messages (camera unavailable, permissions denied, etc.) route through
+  typed errors with [tag=...] prefixes.
+
+### D-082 — Tests for the Day-4 surface (43 new)
+- CameraErrorTests: 8 cases (description, tags, Equatable)
+- CameraAuthorizationStatusTests: 6 cases (user messages, Set<> size)
+- CameraServiceMockTests: 12 cases (3 inits, recording, empty-image guards,
+  real-impl ingest contract)
+- LibraryPickerErrorTests: 5 cases
+- CapturedImageStoreTests: 6 cases (storage + tmp-dir overwrite + UUID filename)
+- MenuProcessorTests: 6 cases (received / errored / nil path / Equatable)
+
+### Bug found by tests (worth recording)
+- Day-4 first run: test_set_overwrites_previous_tmp_file failed with
+  "Replacing the image must delete the previous tmp file" → but the URL that
+  *should* still exist (the new file) also didn't exist.
+- Diagnosis: timestamped filename (`Int(Date().timeIntervalSince1970)`) →
+  two consecutive calls in the same second produced the same filename.
+  Result: second `set()` wrote over file A, captured `prev` = file A's path,
+  ran `removeItem(prev)` = nuke file A (which was now also file B).
+- Fix: switched filename to `UUID().uuidString`-based + capture `prev` BEFORE
+  updating `onDiskPath`. Verified via the same test, now passes.
+- Lesson: timestamp-based tmp filenames break under tight loops. UUID is the
+  right answer for "I want a unique-named scratch file."
+
+### Coverage update
+- 7 of 8 Camera/*.swift files at ≥97%, with the protocol-only CameraService
+  file at 100% and the protocol extension `ingest()` body at 100%.
+- AVCameraService at 5.05% (simulator ceiling — closes on Day 8 device test)
+- LibraryPicker at 15.22% (simulator ceiling — closes when PHPicker runs on
+  real device; the test currently exercises the type but not the picker flow)
+- Overall line coverage: 65% (still bounded by the FoodieAIApp.swift gap,
+  now slightly worse because AVCameraService adds 100+ lines to the gap)
+
+### Build issue encountered + fixed (Day 4)
+- PHPicker delegate's `loadObject` callback crosses an actor boundary with a
+  non-Sendable NSItemProviderReading. Three rounds of "nonisolated" tweaks
+  until I landed on `Sendable extraction at the boundary` (capture
+  `let asImage = reading as? UIImage` then dispatch).
+- Documented in code with the comment `// provider callback is on a
+  background queue; capture the image inside the closure (Sendable
+  extraction) then hop to the main actor with the value.`
+
+### Manual smoke verified
+- Screenshot 2026-07-27 09:35 PM shows the new Camera (Day 4) panel below
+  Card (Day 3 — Apple FM). Search bar still works, "Loaded 126 dishes"
+  visible sage-green, "Take photo" / "From library" / "Process menu →"
+  buttons render in the warm palette.

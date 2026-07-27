@@ -23,10 +23,11 @@ struct FoodieAIApp: App {
 }
 
 #if DEBUG
-/// Day 2 + Day 3 smoke-test view.
+/// Day 2 + Day 3 + Day 4 smoke-test view.
 ///   - Day 2 (R7 D-049): type a dish name → FuzzyIndex results live.
 ///   - Day 3 (R9 D-062): tap a result → CardGenerator runs against the dish
-///     via Apple FM (or surfaces a typed error). Scroll down to see.
+///     via Apple FM (or surfaces a typed error).
+///   - Day 4 (R10 D-081): Camera + Library picker → MenuProcessor stub.
 /// Removed on Day 6 when the real ContentView ships.
 struct SmokeTestView: View {
     @State private var repository: DishRepository?
@@ -37,6 +38,7 @@ struct SmokeTestView: View {
     @State private var cardDraft: CardDraft?
     @State private var cardError: String?
     @State private var isGenerating: Bool = false
+    @StateObject private var capturedImageStore = CapturedImageStore()
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -62,16 +64,19 @@ struct SmokeTestView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color(red: 0x7A/255, green: 0x9A/255, blue: 0x6E/255))
                 }
-    cardPanel
-                        .padding(.horizontal, 16)
-                        .padding(.top, 20)
-                
+
                 searchField
                     .padding(.horizontal, 16)
 
                 ScrollView {
                     resultsList
                         .padding(.horizontal, 16)
+                    cardPanel
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                    cameraPanelSection
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
                 }
 
                 Spacer()
@@ -84,6 +89,16 @@ struct SmokeTestView: View {
                 loadError = error.localizedDescription
             }
         }
+    }
+
+    @ViewBuilder
+    private var cameraPanelSection: some View {
+        CameraPanel(
+            store: capturedImageStore,
+            cameraService: AVCameraService(),
+            libraryPicker: PHPPickerLibraryPicker(),
+            processor: StubMenuProcessor()
+        )
     }
 
     private var searchField: some View {
