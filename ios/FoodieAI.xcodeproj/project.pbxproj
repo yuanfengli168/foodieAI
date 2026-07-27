@@ -20,6 +20,7 @@
 		29FEF24ECB682C51107E5E48 /* FlavorProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F54C36C1B88CB311CC75B4 /* FlavorProfile.swift */; };
 		2B30E63466E60026598A2B8E /* PromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B8F8AC93C09495FFEDBB6A /* PromptTemplates.swift */; };
 		2DF3EF19D068F1087E1B3554 /* FuzzyIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2259915907D94A99AF9431 /* FuzzyIndex.swift */; };
+		2FD31A8468D36430F4E7E5EA /* PHPickerPresenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA97BF5E1B8313D2D2D01C3 /* PHPickerPresenterTests.swift */; };
 		301F295AD5BE15D83000D1F7 /* CardJSONDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABBEC2B3A49F84D5CBDB8F68 /* CardJSONDecoderTests.swift */; };
 		315354576429186051C22065 /* AVCameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DFA51C7CCCA14900B7918BE /* AVCameraService.swift */; };
 		32192F874EF3D361477C753B /* ScoreColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 812BE6E94064DDDCDAC5ED64 /* ScoreColorTests.swift */; };
@@ -42,6 +43,7 @@
 		8FFA54CB2A35857A6CEAD96E /* MenuProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87CBA96CF269A64E6293FC07 /* MenuProcessorTests.swift */; };
 		97FC5D1426EFF4A4F28F1F30 /* LLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F874276CC017426CFAA5F5FA /* LLMBackend.swift */; };
 		9F61339364E76C178430E499 /* CardGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A220DA4D144FAD4333B6DA0 /* CardGeneratorTests.swift */; };
+		B397AEE587FBC8EAD9D09028 /* PHPickerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CDBCFE1C5FF394C7AEC1A9 /* PHPickerPresenter.swift */; };
 		B7EEDC5163FA256C424ECD19 /* CameraErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE940F3A6AD50D9FB3F934F /* CameraErrorTests.swift */; };
 		BC6F3E11631AA9D469ADAE65 /* MockLLMServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10CC16538CA82C2CEA745E21 /* MockLLMServiceTests.swift */; };
 		C214D6EF18ACABDC7FD31474 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6308EB6422FB61D109995EA6 /* README.md */; };
@@ -84,6 +86,7 @@
 		2E404B2A3E6B97B4A27AAD77 /* LLMError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMError.swift; sourceTree = "<group>"; };
 		302B511C82264DAE384CFB74 /* LoggingPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingPlaceholder.swift; sourceTree = "<group>"; };
 		3C526F01A7DB348E4D3B2ACA /* CapturedImageStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturedImageStoreTests.swift; sourceTree = "<group>"; };
+		4AA97BF5E1B8313D2D2D01C3 /* PHPickerPresenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHPickerPresenterTests.swift; sourceTree = "<group>"; };
 		4FAE08CA17F7FB55D47EB31E /* mapAppleFMErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mapAppleFMErrorTests.swift; sourceTree = "<group>"; };
 		50579367E25C5C8A23A43126 /* AppleFoundationBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleFoundationBackend.swift; sourceTree = "<group>"; };
 		59796EC51CC124970346BD73 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -99,6 +102,7 @@
 		812BE6E94064DDDCDAC5ED64 /* ScoreColorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreColorTests.swift; sourceTree = "<group>"; };
 		87CBA96CF269A64E6293FC07 /* MenuProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuProcessorTests.swift; sourceTree = "<group>"; };
 		9225732C0D7BEA9DF83F9CEB /* CardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardSource.swift; sourceTree = "<group>"; };
+		94CDBCFE1C5FF394C7AEC1A9 /* PHPickerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHPickerPresenter.swift; sourceTree = "<group>"; };
 		9A30B24576551E24630C5F2D /* CameraServiceMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraServiceMock.swift; sourceTree = "<group>"; };
 		9D1C442DE656E5C72E8C1325 /* CameraPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPanel.swift; sourceTree = "<group>"; };
 		9DFA51C7CCCA14900B7918BE /* AVCameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVCameraService.swift; sourceTree = "<group>"; };
@@ -188,6 +192,7 @@
 			children = (
 				2299E8C08ECB35EF5A5BB139 /* Components */,
 				9D1C442DE656E5C72E8C1325 /* CameraPanel.swift */,
+				94CDBCFE1C5FF394C7AEC1A9 /* PHPickerPresenter.swift */,
 				C97C6F5DC4DE01101B799614 /* SearchViewHelpers.swift */,
 			);
 			path = Views;
@@ -270,6 +275,7 @@
 				87CBA96CF269A64E6293FC07 /* MenuProcessorTests.swift */,
 				10CC16538CA82C2CEA745E21 /* MockLLMServiceTests.swift */,
 				173D9E9FCC48265930B7B8B4 /* ModelCoverageTests.swift */,
+				4AA97BF5E1B8313D2D2D01C3 /* PHPickerPresenterTests.swift */,
 				02ACD041D55B072D5FEF0171 /* PinyinConverterTests.swift */,
 				6A789981F05B9402CA8248BE /* PromptTemplatesTests.swift */,
 				812BE6E94064DDDCDAC5ED64 /* ScoreColorTests.swift */,
@@ -421,6 +427,7 @@
 				07D67995CE7755DA06C2EF2B /* LoggingPlaceholder.swift in Sources */,
 				E0F7A214AEE8712AEAB27838 /* MenuProcessor.swift in Sources */,
 				8781AF7824F2E11413F809C6 /* MockLLMService.swift in Sources */,
+				B397AEE587FBC8EAD9D09028 /* PHPickerPresenter.swift in Sources */,
 				1D26A2EAD32B4145A86F963F /* PinyinConverter.swift in Sources */,
 				2B30E63466E60026598A2B8E /* PromptTemplates.swift in Sources */,
 				C25E3E29B0569B18FDA0011F /* SearchViewHelpers.swift in Sources */,
@@ -446,6 +453,7 @@
 				8FFA54CB2A35857A6CEAD96E /* MenuProcessorTests.swift in Sources */,
 				BC6F3E11631AA9D469ADAE65 /* MockLLMServiceTests.swift in Sources */,
 				68B5AB29E60FD30F7C27DC3C /* ModelCoverageTests.swift in Sources */,
+				2FD31A8468D36430F4E7E5EA /* PHPickerPresenterTests.swift in Sources */,
 				09555A6D207F0282AB33F3E2 /* PinyinConverterTests.swift in Sources */,
 				71F1610848FFA25D19E5F648 /* PromptTemplatesTests.swift in Sources */,
 				32192F874EF3D361477C753B /* ScoreColorTests.swift in Sources */,

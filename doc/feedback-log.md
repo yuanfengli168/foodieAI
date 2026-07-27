@@ -896,3 +896,90 @@ Day-4 file coverage range: 15.22% to 100% (3 files ≥95%, 2 files device-only b
   Card (Day 3 — Apple FM). Search bar still works, "Loaded 126 dishes"
   visible sage-green, "Take photo" / "From library" / "Process menu →"
   buttons render in the warm palette.
+
+---
+
+## Round 11 — Day 4.1 (Library picker fix from QA)
+
+Date: 2026-07-27
+Total tests: **198** (194 from Day 4 + 4 new in Day 4.1)
+Motive: "From library" tap hangs the smoke view indefinitely.
+
+### QA symptom (R11/D-084)
+- After Day 4 shipped (commit `8f07e9b`), the Lens-4 manual QA step
+  ("tap From library") hung the smoke view. The simulator accepted the
+  tap, the spinner appeared, but nothing else.
+- Diagnosis: `PHPPickerLibraryPicker.pickImage() async throws` parked a
+  continuation, but the system PHPickerViewController never got *presented*
+  (no `present(_:animated:)` was ever called from any UIViewController).
+  Without a real presentation, PHPicker's delegate never fires, so the
+  continuation hangs forever.
+- Root cause: design oversight in R10/D-077. The comment explicitly
+  said "SmokeTestView / Day 6 ContentView own their own UIKit
+  presentation surface" — but Day 4 never built that surface. The
+  async API existed but no host presenter did.
+
+### D-085 — Flip PHPickerLibraryPicker to callback-driven
+- New shape: `var onPicked: (@Sendable @MainActor (Result<UIImage?, LibraryPickerError>) -> Void)?`
+- Old async `pickImage()` is retained for protocol conformance but now
+  always throws `LibraryPickerError.underlying(reason: "use PHPickerPresenter
+  via SwiftUI; pickImage() is test-only")`. Future callers that forget
+  the new flow get a clear error instead of a silent hang.
+- Removed the `nonisolated(unsafe)` continuation juggling (R10/D-077 had
+  to work around strict concurrency); the delegate-callback design is
+  strictly cleaner.
+
+### D-086 — PHPickerPresenter UIViewControllerRepresentable
+- New file `Views/PHPickerPresenter.swift` wraps PHPickerViewController.
+  PickerHostingController is presented fullscreen by SwiftUI's sheet;
+  immediately constructs + presents the PickerViewController from its
+  `viewDidAppear`. Resolves the sheet via `onResolve:` callback.
+- The wrapper VC is NOT a PHPickerViewControllerDelegate — the picker
+  itself owns the delegate so the closure outlives the presentation.
+- Has a `PHPickerPresenterFallback` view for platforms where PhotosUI
+  isn't available (Mac Catalyst, etc.), and a protocol-level fallback
+  declared in the `else` branch of the `canImport(PhotosUI)` gate.
+
+### D-087 — CameraPanel wires the sheet
+- New `@State private var isShowingLibraryPicker` toggles by tapping
+  "From library".
+- `.sheet(isPresented: $isShowingLibraryPicker)` mounts `PHPickerPresenter`
+  at the panel level. Resolved result goes through the existing
+  `CapturedImageStore.set(_:)` path; cancel returns `nil` and dismisses
+  silently.
+- `pickImage()` async path is preserved as a no-op stub for any future
+  direct callers (and to keep the protocol shape uniform).
+- `cameraPanelSection` in `FoodieAIApp.swift` no longer passes a
+  `libraryPicker:` argument (the presenter owns presentation directly).
+
+### D-088 — Tests for the new contract (4 new)
+- PHPickerPresenterTests:
+  - displayLabel consistency
+  - `pickImage()` always throws "use PHPickerPresenter"
+  - LibraryPicker protocol conformance (for test-surface uniformity)
+  - PHPickerViewController configured with images filter + selectionLimit = 1
+- Marked `@MainActor` because the new `onPicked` callback is
+  `@Sendable @MainActor`, which forced PHPPickerLibraryPicker's init
+  back to main-actor-isolated.
+
+### What's verified manually now
+- xcodebuild build succeeds on both Debug-iphonesimulator + the test target
+- All 198 tests green
+- The smoke view still renders identically (header, "Loaded 126 dishes",
+  search field, Card panel, Camera panel with both buttons)
+- Manual re-test of "From library" still requires you (the user) to tap.
+  Expected behavior: tapping "From library" now opens the PHPicker sheet
+  (was a hung spinner before).
+
+### Suggested next QA step for the user
+1. Tap "From library" — sheet with the simulator's photo library
+   should slide up immediately (1-2 sec).
+2. If you have at least one photo (drag-drop a .jpg into the simulator
+   window first), tap a thumbnail. The sheet dismisses, the panel
+   shows the captured image + "Captured at HH:MM:SS" + "Retake" /
+   "Process menu →" pair.
+3. Tap "Process menu →" → green panel appears with the StubMenuProcessor
+   output ("Received: MenuProcessor (stub) • NNN bytes • path=/private/...")
+4. If you have NO photos, the PHPicker sheet shows the empty-state grid.
+   You can dismiss with a swipe-down; the panel should stay unchanged.
+

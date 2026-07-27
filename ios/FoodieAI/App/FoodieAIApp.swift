@@ -96,7 +96,6 @@ struct SmokeTestView: View {
         CameraPanel(
             store: capturedImageStore,
             cameraService: AVCameraService(),
-            libraryPicker: PHPPickerLibraryPicker(),
             processor: StubMenuProcessor()
         )
     }

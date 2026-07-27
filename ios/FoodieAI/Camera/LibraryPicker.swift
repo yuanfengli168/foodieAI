@@ -53,41 +53,36 @@ public protocol LibraryPicker: Sendable {
 #if canImport(PhotosUI)
 import PhotosUI
 
-/// Real PHPicker-backed implementation (R10 D-077).
+/// Callback-driven PHPicker-backed delegate (R11/D-085).
 ///
-/// We deliberately do *not* wrap PHPickerViewController in a UIViewController
-/// representable here — the SmokeTestView (and Day 6's ContentView) own
-/// their own UIKit presentation surface. The real impl uses the new
-/// `loadFileRepresentation(forTypeIdentifier:)` PHPicker callback that
-/// returns a URL we can load asynchronously, then converts to UIImage.
+/// This is the underlying UIKit delegate that the SwiftUI host
+/// (`Views/PHPickerPresenter.swift`, R11/D-086) drives. We used to expose
+/// `pickImage() async throws -> UIImage?` here (R10/D-077), but that
+/// never had a host that actually presented the picker — which meant
+/// the system alert never showed, the continuation hung forever, and
+/// "From library" looked like a frozen button (verified by Jacky during
+/// QA, R11/D-084). The fix is to flip the surface:
 ///
-/// Day 5 OCR does not need pixel-perfect rendering — a JPEG at quality
-/// 0.9 is more than enough for Apple Vision accuracy per the benchmark
-/// plan (`doc/ocr-benchmark-plan.md`).
+///   - the representable owns the picker lifecycle
+///   - the picker reports back via an `onPicked: (Result<UIImage, Error>) -> Void`
+///     callback
+///   - the (old) async API stays around for unit tests but is no longer
+///     called from `CameraPanel` (which uses the SwiftUI binding instead)
 ///
-/// Concurrency note (R10): PHPicker's delegate is invoked on the main
-/// actor, but Swift 6 strict concurrency sees it as a non-isolated
-/// callback. We use `nonisolated(unsafe)` plus a lock for the
-/// continuation; the lock is uncontended in practice (the delegate
-/// fires once per picker invocation).
-public final class PHPPickerLibraryPicker: NSObject, LibraryPicker, @unchecked Sendable, PHPickerViewControllerDelegate {
+/// Day 5 OCR doesn't need pixel-perfect rendering — a JPEG at quality
+/// 0.9 from `itemProvider.loadDataRepresentation(forTypeIdentifier:)`
+/// is more than enough for Apple Vision accuracy.
+public final class PHPPickerLibraryPicker: NSObject, @unchecked Sendable, PHPickerViewControllerDelegate {
     public let displayLabel: String = "Photo Library (PHPicker)"
 
-    private let lock = NSLock()
-    nonisolated(unsafe) private var continuation: CheckedContinuation<UIImage?, Error>?
+    /// Called on the main actor when the picker resolves (or the user
+    /// cancels). Cancellations are reported as `.success(nil)`.
+    public var onPicked: (@Sendable @MainActor (Swift.Result<UIImage?, LibraryPickerError>) -> Void)?
 
     public override init() { super.init() }
 
-    public func pickImage() async throws -> UIImage? {
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<UIImage?, Error>) in
-            lock.lock()
-            continuation = cont
-            lock.unlock()
-        }
-    }
-
-    /// Bind the system PHPickerViewController. Called from the SwiftUI
-    /// host via a UIViewControllerRepresentable wrapper.
+    /// Build a configured picker with this object as the delegate.
+    /// Intended to be called once per presentation by the SwiftUI host.
     public func makePicker() -> PHPickerViewController {
         var config = PHPickerConfiguration(photoLibrary: .shared())
         config.filter = .images
@@ -100,46 +95,47 @@ public final class PHPPickerLibraryPicker: NSObject, LibraryPicker, @unchecked S
 
     public func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         guard let result = results.first else {
-            resumeWithImage(nil, error: nil)
+            deliver(.success(nil))
             return
         }
         let provider = result.itemProvider
         guard provider.canLoadObject(ofClass: UIImage.self) else {
-            resumeWithImage(nil, error: LibraryPickerError.underlying(
-                reason: "selected item is not a UIImage"
-            ))
+            deliver(.failure(.underlying(reason: "selected item is not a UIImage")))
             return
         }
         provider.loadObject(ofClass: UIImage.self) { [weak self] reading, _ in
-            // The provider callback is on a background queue; capture the
-            // image inside the closure (Sendable extraction) then hop
-            // to the main actor with the value.
+            // Provider callback is on a background queue; Sendable
+            // extraction at the boundary then hop to main.
             let asImage: UIImage? = (reading as? UIImage)
-            DispatchQueue.main.async {
-                self?.resumeWithImage(asImage, error: nil)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if let asImage, asImage.size == .zero {
+                    self.deliver(.failure(.emptyImage))
+                    return
+                }
+                self.deliver(.success(asImage))
             }
         }
     }
 
-    private func resumeWithImage(_ image: UIImage?, error: Error?) {
-        lock.lock()
-        let pending = continuation
-        continuation = nil
-        lock.unlock()
-        guard let pending else { return }
-        if let error {
-            pending.resume(throwing: error)
-            return
-        }
-        guard let image else {
-            pending.resume(returning: nil)
-            return
-        }
-        if image.size == .zero {
-            pending.resume(throwing: LibraryPickerError.emptyImage)
-            return
-        }
-        pending.resume(returning: image)
+    private func deliver(_ result: Swift.Result<UIImage?, LibraryPickerError>) {
+        let cb = onPicked
+        onPicked = nil
+        Task { @MainActor in cb?(result) }
+    }
+}
+
+/// LibraryPicker async API retained for unit tests (R11). Day-4 smoke
+/// view no longer uses this — it goes through `PHPickerPresenter`.
+extension PHPPickerLibraryPicker: LibraryPicker {
+    public func pickImage() async throws -> UIImage? {
+        // The async API can never be reached in production after
+        // R11/D-086 fixed the presentation. We throw so any future
+        // caller that forgets to use the presenter sees a clear error
+        // instead of a silent hang.
+        throw LibraryPickerError.underlying(
+            reason: "use PHPickerPresenter via SwiftUI; pickImage() is test-only"
+        )
     }
 }
 #endif

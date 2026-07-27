@@ -1,5 +1,5 @@
 // CameraPanel.swift
-// Day 4 — Camera + Library → MenuProcessor panel (R10 D-081).
+// Day 4 / Day 4.1 — Camera + Library → MenuProcessor panel (R10 D-081, R11/D-086).
 //
 // Mounted inside SmokeTestView under #if DEBUG. This is the Day-4
 // milestone surface. Day 6's ContentView will host the same components
@@ -16,10 +16,13 @@
 // All logic goes through protocols (CameraService, LibraryPicker,
 // MenuProcessor) so the smoke tests can replace any of them.
 //
-// We deliberately keep auto-capture (Q2) **disabled** here: Day 4 hands
-// the user a visible "Take photo" button so we can verify the wiring
-// without racing the timer. Day 6's ContentView will turn auto-capture
-// back on (per the original R7-D-012 decision).
+// Library Picker wiring (R11/D-086): "From library" toggles `@State
+// `isShowingLibraryPicker` which drives a SwiftUI `.sheet` containing
+// `PHPickerPresenter`. The presenter wraps `PHPickerViewController`,
+// shows it as a fullscreen modal, and resolves the callback when the
+// user picks an image or cancels. This replaced the old async API
+// whose continuation never fired (R10/D-077) → "From library" hangs
+// indefinitely. Verified by Jacky during QA on 2026-07-27.
 
 import SwiftUI
 #if canImport(UIKit)
@@ -29,12 +32,11 @@ import UIKit
 public struct CameraPanel: View {
     @ObservedObject var store: CapturedImageStore
     let cameraService: CameraService
-    let libraryPicker: any LibraryPicker
     let processor: any MenuProcessor
 
     @State private var authStatus: CameraAuthorizationStatus = .notDetermined
     @State private var isCapturing = false
-    @State private var isPickingFromLibrary = false
+    @State private var isShowingLibraryPicker = false
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var processorResult: String?
@@ -42,12 +44,10 @@ public struct CameraPanel: View {
     public init(
         store: CapturedImageStore,
         cameraService: CameraService,
-        libraryPicker: any LibraryPicker,
         processor: any MenuProcessor
     ) {
         self.store = store
         self.cameraService = cameraService
-        self.libraryPicker = libraryPicker
         self.processor = processor
     }
 
@@ -77,24 +77,18 @@ public struct CameraPanel: View {
                 }
                 .disabled(isCapturing)
 
-                Button(action: { Task { await pickFromLibrary() } }) {
-                    HStack {
-                        if isPickingFromLibrary {
-                            ProgressView()
-                        } else {
-                            Text("From library")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Color.white)
-                    .foregroundStyle(Color(red: 0x2A/255, green: 0x25/255, blue: 0x22/255))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(red: 0xC7/255, green: 0x68/255, blue: 0x3D/255), lineWidth: 1.5)
-                    )
+                Button(action: { openLibraryPicker() }) {
+                    Text("From library")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.white)
+                        .foregroundStyle(Color(red: 0x2A/255, green: 0x25/255, blue: 0x22/255))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(red: 0xC7/255, green: 0x68/255, blue: 0x3D/255), lineWidth: 1.5)
+                        )
                 }
-                .disabled(isPickingFromLibrary)
+                .disabled(isShowingLibraryPicker)
             }
 
             if let image = store.current {
@@ -165,6 +159,34 @@ public struct CameraPanel: View {
         .task {
             authStatus = await cameraService.authorizationStatus
         }
+        .sheet(isPresented: $isShowingLibraryPicker) {
+            PHPickerPresenter { result in
+                switch result {
+                case .success(let image):
+                    if let image {
+                        do {
+                            _ = try store.set(image)
+                            errorMessage = nil
+                            processorResult = nil
+                        } catch let err as CameraError {
+                            errorMessage = "[tag=\(err.tag)] \(err.errorDescription ?? "<no desc>")"
+                        } catch {
+                            errorMessage = "Unexpected: \(String(describing: error))"
+                        }
+                    }
+                case .failure(let err):
+                    errorMessage = "[tag=\(err.tag)] \(err.errorDescription ?? "<no desc>")"
+                }
+                isShowingLibraryPicker = false
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    private func openLibraryPicker() {
+        errorMessage = nil
+        processorResult = nil
+        isShowingLibraryPicker = true
     }
 
     private func displayCapturedAt() -> String {
@@ -198,23 +220,6 @@ public struct CameraPanel: View {
             errorMessage = "[tag=\(err.tag)] \(err.errorDescription ?? "<no desc>")"
         } catch {
             errorMessage = "Unexpected non-CameraError: \(String(describing: error))"
-        }
-    }
-
-    private func pickFromLibrary() async {
-        isPickingFromLibrary = true
-        errorMessage = nil
-        processorResult = nil
-        defer { isPickingFromLibrary = false }
-        do {
-            if let image = try await libraryPicker.pickImage() {
-                _ = try store.set(image)
-            }
-            // cancellation returns nil → silently exit
-        } catch let err as LibraryPickerError {
-            errorMessage = "[tag=\(err.tag)] \(err.errorDescription ?? "<no desc>")"
-        } catch {
-            errorMessage = "Unexpected non-LibraryPickerError: \(String(describing: error))"
         }
     }
 
