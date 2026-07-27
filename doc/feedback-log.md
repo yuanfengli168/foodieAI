@@ -679,3 +679,95 @@ Overall coverage: **67.58%** (down from Day 2's 97.88%)
   view body. Actually simpler: each view's `.task` (or the views inside
   the ViewBuilder closure) handles it. The final implementation in
   FoodieAIApp.swift has each view's `.task` independently load the repository.
+
+---
+
+## Round 9 — Day 3 (LLM glue: LLMService, PromptTemplates, CardGenerator, AppleFM)
+
+Date: 2026-07-27
+Total tests: **151** (100 from Day 2.5 + 51 new in Day 3)
+Overall coverage: **73.76%** (up from Day 2.5's 67.58%; new file coverage 74–100%)
+
+### D-062 — Smoke view extended with Card panel
+- SmokeTestView gains a "Card (Day 3 — Apple FM)" section below the search results.
+- Tapping a result selects it; pressing the orange "Generate card via Apple FM"
+  button calls CardGenerator on that Dish and shows the parsed CardDraft OR
+  a typed LLMError tagged label.
+- Simulator surfaces `[tag=backend_unavailable]` for now — Apple FM is not
+  callable in iOS 26 simulator. Verified visually (screenshot 2026-07-27).
+
+### D-063 — LLMError: 5 typed cases
+- backendUnavailable / malformedResponse / cancelled / refused / underlying
+- Each has `errorDescription` (LocalizedError) and `tag` (machine-readable)
+- Equatable uses case + reason so retry logic doesn't double-fire.
+- file: ios/FoodieAI/LLM/LLMError.swift (100%)
+
+### D-064 — LLMService protocol
+- Sendable, async, `isAvailable` + `generate(prompt:) async throws -> String`.
+- AppleFMBackend and (future) QwenBackend conform.
+- file: ios/FoodieAI/LLM/LLMService.swift
+
+### D-065 — CardDraft + strict CardJSONDecoder
+- CardDraft is a lean 6-field model (nameZh?, nameEn?, introEn required,
+  introZh?, pairWithEn, region?). Deliberately NOT reusing Dish because
+  LLMs emit partial cards and we want fail-loud-on-type-mismatch.
+- CardJSONDecoder.decode uses JSONSerialization (not Codable) so missing
+  required `intro_en` throws a DecodingError with detail.
+- Silently drops non-string entries in pair_with_en.
+- file: ios/FoodieAI/LLM/CardDraft.swift (100%)
+
+### D-066 — PromptTemplates: 2 prompt strategies
+- systemFirst + systemRetry. The retry prompt explicitly mentions "previous
+  response could not be parsed" to nudge chat-memory models away from the
+  same mistake.
+- userPrompt(for:query:) includes dish name + pinyin + user's typed query.
+- file: ios/FoodieAI/LLM/PromptTemplates.swift (100%)
+
+### D-067 — CardGenerator orchestrator
+- Pipeline: 1st try with systemFirst → if parse fails, retry once with
+  systemRetry → if still fails, throw malformedResponse tagged "after 2
+  attempts". cancellation/refusal/backend-unavailable bypass retry.
+- file: ios/FoodieAI/LLM/CardGenerator.swift (100%)
+
+### D-068 — MockLLMService: 3 init overloads
+- scripted (scripted list), failFirstWith.thenReturn, alwaysThrows.
+- Records every prompt + call count for assertion in tests.
+- file: ios/FoodieAI/LLM/MockLLMService.swift (95.24%)
+
+### D-069 — AppleFoundationBackend with extractable error mapper
+- Uses LanguageModelSession.GenerationError (the actual iOS 26 cases).
+- The `generate(prompt:)` path is simulator-blocked (FM throws even when
+  availability is .available). Surface as backendUnavailable.
+- The error-mapping is a public free function `mapAppleFMError(_:)` so
+  each FM error case can be tested in isolation. (Closed the gap from
+  R8 D-057 — refactor-not-exclude pattern lifted coverage from 22% to 74%.)
+- file: ios/FoodieAI/LLM/AppleFoundationBackend.swift (74.07%, simulator
+  ceiling)
+
+### D-070 — Two coverage gaps, both acknowledged
+- App/FoodieAIApp.swift: 44.01% (same Day 2.5 gap; ViewModel on Day 6).
+- LLM/AppleFoundationBackend.swift: 74.07% (the 9 FM error-mapping
+  branches need a real `LanguageModelSession.GenerationError`, which
+  the simulator can't produce — closed on-device in Day 8).
+- file: ios/FoodieAI/Resources/Data/README.md (Known coverage gaps section)
+
+### Test infrastructure (R9)
+- LLMErrorTests (7): description + tag + Equatable contract pinned
+- CardJSONDecoderTests (12): minimal/full/pretty/missing/non-object/round-trip
+- CardGeneratorTests (8): happy path, retry, both-invalid, no-retry-error
+  paths, availability gating
+- MockLLMServiceTests (8): 3 init overloads + recording + isAvailable
+- PromptTemplatesTests (9): user prompt shape + system keys + retry hint +
+  looksLikeJSON
+- AppleFoundationBackendAvailabilityTests (3): displayLabel + isAvailable +
+  compile-time conformance
+- mapAppleFMErrorTests (7): non-FM errors → underlying; error description
+  always present; live availability + generate smoke (catches either
+  branch)
+- Total new: 54 (but 3 were duplicate fixes of failing tests so net = 51)
+
+### Build issue encountered + fixed
+- Info.plist wasn't being included in the app bundle → app launch returned
+  "Missing bundle ID". Fixed by adding ios/FoodieAI/Info.plist with the
+  expected keys (CFBundleDisplayName, permission strings, supported
+  orientations). Tests target also needed GENERATE_INFOPLIST_FILE: YES.

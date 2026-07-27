@@ -23,13 +23,20 @@ struct FoodieAIApp: App {
 }
 
 #if DEBUG
-/// Day 2 smoke-test view (R7 D-049). Lets you type dish names and see
-/// FuzzyIndex results live. Removed on Day 6 when the real ContentView ships.
+/// Day 2 + Day 3 smoke-test view.
+///   - Day 2 (R7 D-049): type a dish name → FuzzyIndex results live.
+///   - Day 3 (R9 D-062): tap a result → CardGenerator runs against the dish
+///     via Apple FM (or surfaces a typed error). Scroll down to see.
+/// Removed on Day 6 when the real ContentView ships.
 struct SmokeTestView: View {
     @State private var repository: DishRepository?
     @State private var loadError: String?
     @State private var query: String = ""
     @State private var results: [FuzzyMatch] = []
+    @State private var selectedDish: Dish?
+    @State private var cardDraft: CardDraft?
+    @State private var cardError: String?
+    @State private var isGenerating: Bool = false
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -55,7 +62,10 @@ struct SmokeTestView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color(red: 0x7A/255, green: 0x9A/255, blue: 0x6E/255))
                 }
-
+    cardPanel
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                
                 searchField
                     .padding(.horizontal, 16)
 
@@ -150,6 +160,11 @@ struct SmokeTestView: View {
                     .padding(.horizontal, 10)
                     .background(Color.white.opacity(0.7))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .onTapGesture {
+                        selectedDish = match.dish
+                        cardDraft = nil
+                        cardError = nil
+                    }
                 }
             }
             .padding(.top, 12)
@@ -159,6 +174,93 @@ struct SmokeTestView: View {
     private func runSearch(_ q: String) {
         guard let repository else { return }
         results = searchDishes(q, in: repository.dishes)
+    }
+
+    // MARK: - Day 3: Card generation panel
+
+    @ViewBuilder
+    private var cardPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Card (Day 3 — Apple FM)")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color(red: 0x2A/255, green: 0x25/255, blue: 0x22/255))
+
+            if let selectedDish {
+                Text("Selected: \(selectedDish.nameZh.isEmpty ? selectedDish.nameEn : selectedDish.nameZh)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+
+                Button(action: { Task { await generateCard() } }) {
+                    HStack {
+                        if isGenerating {
+                            ProgressView()
+                        } else {
+                            Text("Generate card via Apple FM")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color(red: 0xC7/255, green: 0x68/255, blue: 0x3D/255))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .disabled(isGenerating)
+
+                if let cardError {
+                    Text(cardError)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(red: 0xC7/255, green: 0x68/255, blue: 0x3D/255).opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+
+                if let draft = cardDraft {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let zh = draft.nameZh { Text(zh).font(.system(size: 16, weight: .medium)) }
+                        if let en = draft.nameEn { Text(en).font(.system(size: 14)).foregroundStyle(.secondary) }
+                        Text(draft.introEn).font(.system(size: 13))
+                        if let zh = draft.introZh {
+                            Text(zh).font(.system(size: 13)).foregroundStyle(.secondary)
+                        }
+                        if !draft.pairWithEn.isEmpty {
+                            Text("Pairs: \(draft.pairWithEn.joined(separator: ", "))")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                        if let region = draft.region {
+                            Text("Region: \(region)").font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            } else {
+                Text("Tap a search result above to select a dish.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @MainActor
+    private func generateCard() async {
+        guard let selectedDish else { return }
+        isGenerating = true
+        cardError = nil
+        cardDraft = nil
+        defer { isGenerating = false }
+        let backend = AppleFoundationBackend()
+        let generator = CardGenerator(service: backend)
+        do {
+            cardDraft = try await generator.generate(for: selectedDish, query: query)
+        } catch let error as LLMError {
+            cardError = "[tag=\(error.tag)] \(error.errorDescription ?? "<no description>")"
+        } catch {
+            cardError = "Unexpected non-LLMError: \(String(describing: error))"
+        }
     }
 
 }

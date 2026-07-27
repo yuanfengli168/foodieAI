@@ -226,6 +226,13 @@ func testInvalidTransitionThrows() {
 | `Views/SearchViewHelpers.swift` (Day 2.5) | 13 tests: 4 `ScoreColorTests`, 9 `SearchDishesTests` | **100%** | ✅ |
 | `App/FoodieAIApp.swift` (Day 2.5, after D-055/#if DEBUG + D-056 helper extraction) | 0 unit tests; manual smoke test in simulator | **44.01%** | ⚠️ gap acknowledged — see **Day 2.5** below |
 | **Overall (Day 2.5)** | **100/100 passing** | **67.58%** | ⚠️ below 95% — see **Day 2.5** below |
+| `LLM/LLMError.swift` (Day 3) | 7 tests (description + tag + Equatable contract) | **100%** | ✅ |
+| `LLM/CardDraft.swift` (Day 3) | 11 tests (decode variants, errors, round-trip) | **100%** | ✅ |
+| `LLM/CardGenerator.swift` (Day 3) | 8 tests (retry pipeline, error gating, availability gate) | **100%** | ✅ |
+| `LLM/PromptTemplates.swift` (Day 3) | 9 tests (prompt shape, system keys, retry hint) | **100%** | ✅ |
+| `LLM/MockLLMService.swift` (Day 3) | 8 tests (3 init overloads + recording) | **95.24%** | ✅ |
+| `LLM/AppleFoundationBackend.swift` (Day 3) | 9 tests (displayLabel, availability, error-map function) | **74.07%** | ⚠️ simulator ceiling — see **Day 3** below |
+| **Overall (Day 3)** | **151/151 passing** | **73.76%** | ⚠️ two gaps — see **Day 3** below |
 
 **Day 2 progress**:
 - Added `PinyinConverter.swift` (100% coverage) — hand-rolled pinyin table for the 126 dishes
@@ -233,7 +240,7 @@ func testInvalidTransitionThrows() {
 - Added 40 new tests across 3 new test classes (FuzzyIndexTests, PinyinConverterTests)
 - Coverage held above 95% (97.88% overall)
 
-**Day 2.5 — coverage gap acknowledged (R8 D-057)**:
+**Day 2.5 — coverage gap acknowledged (R8 D-057)** *moved up to 7 files at 100% (R9 D-070)*:
 
 After wrapping `SmokeTestView` under `#if DEBUG` and adding `ProductionPlaceholder`
 (R8 D-055), plus extracting the logic to `Views/SearchViewHelpers.swift` (R8 D-056),
@@ -259,6 +266,33 @@ ModifiedContent<...>` if you try).
 - §2 says "refactor, don't exclude": extracting `searchDishes` and `scoreColor`
   to a 100%-covered `SearchViewHelpers.swift` is the refactor we *can* do today;
   the ViewModel extraction requires the production UI skeleton, which is Day 6.
+
+**Day 3 — second coverage gap acknowledged (R9 D-070)**:
+
+After Day 3's LLM glue, overall coverage is 73.76%. The gap now sits in
+two files:
+
+| File | Line coverage | Why |
+|---|---|---|
+| `App/FoodieAIApp.swift` | 44.01% | SwiftUI view bodies (Day 6 ViewModel will close) |
+| `LLM/AppleFoundationBackend.swift` | 74.07% | The 9 `LanguageModelSession.GenerationError` cases require a real FM session, which the iOS 26 simulator cannot produce — closed on-device in Day 8 |
+
+**What we did follow §2's "refactor, don't exclude" rule for the LLM gap**:
+- Initial AppleFoundationBackend coverage was **22.92%** — only the `isAvailable` and `displayLabel` reached unit tests.
+- Refactored the error-mapping path: lifted `mapAppleFMError(_:)` and
+  `mapAppleFMGenerationError(_:)` into module-level functions, then wrote
+  `mapAppleFMErrorTests` that probes both code paths with realistic-shaped
+  inputs. Coverage climbed to **74.07%** without excluding anything.
+- The remaining 25.93% is unreachable on simulator — the 9 `GenerationError`
+  case branches. Day 8 device test will land those.
+
+**Closed gaps in Round 8 that did not exist after Round 7**:
+- R7 introduced the smoke-test view code in `FoodieAIApp.swift` and dropped
+  coverage to 44%. R8 extracted the testable bits to `Views/SearchViewHelpers.swift`
+  (now 100% covered).
+- Day 3's `extract-to-function` pattern for AppleFoundationBackend is the
+  same playbook — we apply it routinely when a class doesn't fit the test
+  boundaries cleanly.
 
 **How to reproduce these numbers**:
 ```bash

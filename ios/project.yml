@@ -30,20 +30,6 @@ targets:
       - path: FoodieAI
     resources:
       - path: FoodieAI/Resources/Data/dishes.jsonl
-    info:
-      path: FoodieAI/Info.plist
-      properties:
-        UILaunchScreen:
-          UIColorName: ""
-          UIImageName: ""
-        CFBundleDisplayName: foodieAI
-        NSCameraUsageDescription: "foodieAI needs the camera to read menus in foreign languages."
-        NSPhotoLibraryUsageDescription: "foodieAI needs photo library access to read menu photos you've already taken."
-        NSPhotoLibraryAddUsageDescription: "foodieAI can save dish photos to your library."
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-        UIRequiredDeviceCapabilities:
-          - arm64
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.foodieai.app
@@ -51,6 +37,11 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_NSCameraUsageDescription: "foodieAI needs the camera to read menus in foreign languages."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "foodieAI needs photo library access to read menu photos you've already taken."
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "foodieAI can save dish photos to your library."
+        INFOPLIST_KEY_UIRequiredDeviceCapabilities: "arm64"
+        INFOPLIST_KEY_CFBundleDisplayName: foodieAI
   FoodieAITests:
     type: bundle.unit-test
     platform: iOS
