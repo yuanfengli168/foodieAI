@@ -23,11 +23,12 @@ struct FoodieAIApp: App {
 }
 
 #if DEBUG
-/// Day 2 + Day 3 + Day 4 smoke-test view.
+/// Day 2 + Day 3 + Day 4 + Day 5 smoke-test view.
 ///   - Day 2 (R7 D-049): type a dish name → FuzzyIndex results live.
 ///   - Day 3 (R9 D-062): tap a result → CardGenerator runs against the dish
 ///     via Apple FM (or surfaces a typed error).
 ///   - Day 4 (R10 D-081): Camera + Library picker → MenuProcessor stub.
+///   - Day 5 (R12 D-098): Vision OCR → match against DishRepository.
 /// Removed on Day 6 when the real ContentView ships.
 struct SmokeTestView: View {
     @State private var repository: DishRepository?
@@ -39,6 +40,7 @@ struct SmokeTestView: View {
     @State private var cardError: String?
     @State private var isGenerating: Bool = false
     @StateObject private var capturedImageStore = CapturedImageStore()
+    @State private var menuProcessorResult: MenuProcessingResult?
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -93,11 +95,29 @@ struct SmokeTestView: View {
 
     @ViewBuilder
     private var cameraPanelSection: some View {
-        CameraPanel(
-            store: capturedImageStore,
-            cameraService: AVCameraService(),
-            processor: StubMenuProcessor()
-        )
+        // Day 5: use the real OCR pipeline. Falls back to StubMenuProcessor
+        // if the repository hasn't loaded yet (e.g. first render before
+        // the .task in body completes).
+        if let repository {
+            CameraPanel(
+                store: capturedImageStore,
+                cameraService: AVCameraService(),
+                processor: VisionMenuProcessor(
+                    ocr: VisionOCRService(),
+                    repository: repository,
+                    minConfidenceForMatch: 0.5
+                ),
+                onResult: { result in
+                    menuProcessorResult = result
+                }
+            )
+            OCRPanel(result: menuProcessorResult)
+                .padding(.top, 16)
+        } else {
+            Text("Loading repository…")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var searchField: some View {

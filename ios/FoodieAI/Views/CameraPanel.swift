@@ -33,6 +33,7 @@ public struct CameraPanel: View {
     @ObservedObject var store: CapturedImageStore
     let cameraService: CameraService
     let processor: any MenuProcessor
+    let onResult: (MenuProcessingResult) -> Void
 
     @State private var authStatus: CameraAuthorizationStatus = .notDetermined
     @State private var isCapturing = false
@@ -44,11 +45,13 @@ public struct CameraPanel: View {
     public init(
         store: CapturedImageStore,
         cameraService: CameraService,
-        processor: any MenuProcessor
+        processor: any MenuProcessor,
+        onResult: @escaping (MenuProcessingResult) -> Void = { _ in }
     ) {
         self.store = store
         self.cameraService = cameraService
         self.processor = processor
+        self.onResult = onResult
     }
 
     public var body: some View {
@@ -228,9 +231,12 @@ public struct CameraPanel: View {
         isProcessing = true
         defer { isProcessing = false }
         let result = await processor.process(image: image, onDiskPath: store.onDiskPath)
+        onResult(result)
         switch result {
         case .received(let bytes, let path, let label):
             processorResult = "Received: \(label) • \(bytes) bytes • path=\(path ?? "<none>")"
+        case .parsed(let lines, let dishes, let unmatched, let label):
+            processorResult = "Parsed by \(label): \(dishes.count) matched, \(unmatched.count) unmatched, \(lines.count) OCR lines"
         case .errored(let reason):
             processorResult = "Errored: \(reason)"
         }
