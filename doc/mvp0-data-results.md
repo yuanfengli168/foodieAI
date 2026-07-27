@@ -173,9 +173,9 @@ I recommend (a).
 | LLM-only test cards | ❌ TODO | Mark 5-10 cards `source: "llm_only"` |
 | 20 fuzzy test queries aligned with DB | ❌ TODO | Either add 17 dishes OR rewrite queries |
 | Expanded intros (20+ words) | ❌ TODO | Bulk-edit 93 Noodle Gourmet intros |
-| Xcode project skeleton | ❌ Not started | Blocked on Day 3 of build plan |
-| MLX-Swift integration | ❌ Not started | Blocked on Day 3 |
-| Vision OCR wrapper | ❌ Not started | Blocked on Day 6 |
+| Xcode project skeleton | ✅ Done | commit `fbe45aa` (Day 1 of practice, 2026-07-26) |
+| MLX-Swift integration | ⏳ Deferred to Day 7+ | We use Apple Foundation Models as primary; MLX-Swift only needed if we add a bundled Qwen fallback. Per R6/D-039. |
+| Vision OCR wrapper | ⏳ Deferred to Day 5 of practice | Per `mvp0-plan.md` §9 |
 
 ---
 

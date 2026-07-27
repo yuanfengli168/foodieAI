@@ -30,6 +30,7 @@
 
 ### Data work
 - [ ] **MVP1 dish DB: 100 ZH + 100 EN/Western** (D-002). MVP0's 126 cards are throwaway spike data; MVP1 starts fresh. **Lock: separate from MVP0, per Jacky Round 5 Q10**
+  - **Note 2026-07-27 (R10):** the 126 MVP0 cards stay in the DB through the MVP0 spike — they are *not* discarded mid-build. The MVP1 rebuild happens *after* MVP0 ships, not before. Treat the MVP0 cards as the dataset the smoke-test view searches against.
 - [ ] **Synonym map** (Q-017) — build before fuzzy search unit tests
 - [ ] **Allergen tags** (`contains_peanut`, etc.) — out of MVP0, in MVP1+ per `data-sourcing.md` §8
 

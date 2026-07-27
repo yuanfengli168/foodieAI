@@ -487,6 +487,23 @@ func generateCard(for dish: Dish) async throws -> Card {
 
 Total: ~7-10 days of focused work.
 
+> **Note 2026-07-27 (R10):** Day-numbering in this section originally assumed
+> Day 1 = data build (see `mvp0-data-results.md`), Day 2 = polish,
+> Day 3 = Xcode skeleton. We collapsed the schedule and made it through
+> data + skeleton + search + LLM glue by Day 3 of practice. The actual
+> mapping is:
+>
+> | Plan day | What it describes | Our actual day | Status |
+> |---|---|---|---|
+> | Day 3 | Project skeleton | Our Day 1 | ✅ commit `fbe45aa` |
+> | Day 4 | Search + index | Our Day 2 | ✅ commit `f35200c` |
+> | Day 5 | LLM + cards | Our Day 3 | ✅ commit `559a200` |
+> | Day 6 | OCR pipeline | Our Day 5 | ⏳ |
+> | Day 7 | Polish + error handling | Our Day 7 | ⏳ |
+>
+> The list below preserves the original numbering because feedback-log R6/D-010
+> and downstream docs reference these labels. Read with the table above.
+
 ### Day 1-2: Data foundation
 - [ ] Manually transcribe 2 menus into `data/menus/menu-*.json` (50 dishes each)
 - [ ] Hand-write 30 cards from real sources (Wikipedia/百度百科) — 15 EN, 15 ZH
